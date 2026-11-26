@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achadinhos</title>
+<meta name="description" content="Seleção de produtos com link direto para comprar na Shopee.">
+<style>
+:root{--ink:#1b1530;--papel:#fbfaff;--card:#fff;--sub:#6b6585;--borda:#e4e0f3;--indigo:#2b1f6b;--laranja:#ff5a1f;--laranja-esc:#d94308;--sol:#ffe45c;color-scheme:light dark}
+@media (prefers-color-scheme:dark){:root{--ink:#f3f0ff;--papel:#130f24;--card:#1e1836;--sub:#a9a2c8;--borda:#352c5c;--indigo:#0d0a1c}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--ink);font:16px/1.45 "Avenir Next","Segoe UI",system-ui,sans-serif}
+a{color:inherit}
+.topo{background:var(--indigo);color:#fff;padding:calc(18px + env(safe-area-inset-top)) 16px 20px}
+.topo-in,main,footer{max-width:1100px;margin:0 auto}
+h1{margin:0;font-size:clamp(1.7rem,6vw,2.6rem);font-weight:900;letter-spacing:-.02em;line-height:1.05}
+.lema{margin:6px 0 14px;color:#d9d3ff;max-width:46ch}
+.busca{width:100%;padding:13px 16px;border-radius:999px;border:0;font:inherit;background:#fff;color:#1b1530}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:14px 16px;scrollbar-width:none;max-width:1100px;margin:0 auto}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:2px solid var(--borda);background:var(--card);color:var(--ink);padding:8px 15px;border-radius:999px;font:inherit;font-weight:700;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--papel);border-color:var(--ink)}
+.grade{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:4px 16px 24px;list-style:none;margin:0}
+@media(min-width:700px){.grade{grid-template-columns:repeat(3,1fr);gap:16px}}
+@media(min-width:1000px){.grade{grid-template-columns:repeat(4,1fr)}}
+.item{background:var(--card);border:2px solid var(--borda);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.item.destaque{grid-column:span 2}
+.foto{position:relative;aspect-ratio:1;background:var(--borda);display:grid;place-items:center;font-size:3rem}
+.item.destaque .foto{aspect-ratio:2/1}
+.foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.desc{position:absolute;top:8px;left:8px;background:var(--sol);color:#1b1530;font-weight:900;font-size:.85rem;padding:4px 9px;border-radius:6px;transform:rotate(-3deg)}
+.corpo{padding:12px;display:flex;flex-direction:column;gap:6px;flex:1}
+.nome{margin:0;font-size:.95rem;font-weight:700;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.precos{margin-top:auto}
+.preco{font-size:1.35rem;font-weight:900}
+.antigo{margin-left:6px;color:var(--sub);text-decoration:line-through;font-size:.85rem}
+.btn{display:block;text-align:center;text-decoration:none;background:var(--laranja);color:#fff;font-weight:800;padding:12px;border-radius:10px;margin-top:6px}
+.btn:hover{background:var(--laranja-esc)}
+:focus-visible{outline:3px solid var(--sol);outline-offset:2px}
+.vazio{padding:40px 16px;text-align:center;color:var(--sub)}
+footer{padding:20px 16px calc(28px + env(safe-area-inset-bottom));color:var(--sub);font-size:.85rem}
+footer a{margin-right:14px;font-weight:700}
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="topo-in">
+    <h1 id="loja"></h1>
+    <p class="lema" id="lema"></p>
+    <input class="busca" id="busca" type="search" placeholder="Buscar produto" aria-label="Buscar produto">
+  </div>
+</header>
+<nav class="chips" id="chips" aria-label="Categorias"></nav>
+<main>
+  <ul class="grade" id="grade"></ul>
+  <p class="vazio" id="vazio" hidden>Nenhum produto encontrado. Tente outra busca ou categoria.</p>
+</main>
+<footer>
+  <p id="contato"></p>
+  <p id="aviso"></p>
+</footer>
+
+<script>
+/* =====================  EDITE SÓ ESTA PARTE  =====================
+   LOJA: nome, frase, redes e aviso de afiliado.
+   PRODUTOS: um bloco { ... } por produto, separados por vírgula.
+     nome        nome do produto
+     categoria   cria o botão de filtro (ex.: "Casa", "Beleza")
+     preco       número com ponto, ex.: 49.9
+     precoAntigo (opcional) preço antes do desconto, mostra a etiqueta de %
+     imagem      endereço da foto do produto (opcional)
+     link        SEU link de afiliado da Shopee
+     destaque    true para o produto aparecer maior (opcional)
+================================================================== */
+const LOJA = {
+  nome: "Achadinhos",
+  lema: "Produtos que valem a pena, com link direto para comprar na Shopee.",
+  instagram: "",   // ex.: "https://instagram.com/seuperfil"
+  whatsapp: "",    // ex.: "https://wa.me/5585999999999"
+  contador: "",    // opcional: seu código do GoatCounter (ex.: "minhaloja") para contar visitas e cliques. Vazio = desligado
+  aviso: "Como afiliado(a) da Shopee, posso receber uma comissão pelas compras feitas pelos links desta página, sem custo extra para você. Preços e disponibilidade podem mudar na Shopee."
+};
+
+const PRODUTOS = [
+  { nome: "EXEMPLO - Fone Bluetooth sem fio", categoria: "Eletrônicos", preco: 49.9, precoAntigo: 89.9, imagem: "", link: "https://shopee.com.br/", destaque: true },
+  { nome: "EXEMPLO - Organizador de gavetas (kit 6 peças)", categoria: "Casa", preco: 24.9, precoAntigo: 39.9, imagem: "", link: "https://shopee.com.br/" },
+  { nome: "EXEMPLO - Garrafa térmica 500 ml", categoria: "Casa", preco: 34.5, imagem: "", link: "https://shopee.com.br/" },
+  { nome: "EXEMPLO - Luminária de mesa USB", categoria: "Eletrônicos", preco: 29.9, precoAntigo: 45, imagem: "", link: "https://shopee.com.br/" },
+  { nome: "EXEMPLO - Kit pincéis de maquiagem", categoria: "Beleza", preco: 19.9, precoAntigo: 35, imagem: "", link: "https://shopee.com.br/" },
+  { nome: "EXEMPLO - Mochila impermeável", categoria: "Moda", preco: 69.9, imagem: "", link: "https://shopee.com.br/" }
+];
+/* ===================  FIM DA PARTE EDITÁVEL  =================== */
+
+const $ = id => document.getElementById(id);
+const brl = n => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const cats = ["Todos", ...new Set(PRODUTOS.map(p => p.categoria).filter(Boolean))];
+let cat = "Todos", termo = "";
+
+document.title = LOJA.nome;
+$("loja").textContent = LOJA.nome;
+$("lema").textContent = LOJA.lema;
+$("aviso").textContent = LOJA.aviso;
+[["Instagram", LOJA.instagram], ["WhatsApp", LOJA.whatsapp]].filter(c => c[1]).forEach(c => {
+  const a = document.createElement("a");
+  a.href = c[1]; a.textContent = c[0]; a.target = "_blank"; a.rel = "noopener";
+  $("contato").append(a);
+});
+
+function chips() {
+  $("chips").replaceChildren(...cats.map(c => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = c; b.setAttribute("aria-pressed", String(c === cat));
+    b.onclick = () => { cat = c; chips(); lista(); };
+    return b;
+  }));
+}
+
+function lista() {
+  const t = termo.toLowerCase();
+  const itens = PRODUTOS.filter(p => (cat === "Todos" || p.categoria === cat) && p.nome.toLowerCase().includes(t));
+  $("vazio").hidden = itens.length > 0;
+  $("grade").replaceChildren(...itens.map(p => {
+    const li = document.createElement("li");
+    li.className = "item" + (p.destaque ? " destaque" : "");
+
+    const foto = document.createElement("div");
+    foto.className = "foto"; foto.textContent = "🛍️";
+    if (p.imagem) {
+      const im = new Image();
+      im.src = p.imagem; im.alt = p.nome; im.loading = "lazy"; im.referrerPolicy = "no-referrer";
+      im.onerror = () => im.remove();
+      foto.append(im);
+    }
+    if (p.preco && p.precoAntigo && p.precoAntigo > p.preco) {
+      const d = document.createElement("span");
+      d.className = "desc"; d.textContent = "-" + Math.round((1 - p.preco / p.precoAntigo) * 100) + "%";
+      foto.append(d);
+    }
+
+    const corpo = document.createElement("div");
+    corpo.className = "corpo";
+    const nome = document.createElement("h2");
+    nome.className = "nome"; nome.textContent = p.nome;
+    const precos = document.createElement("div");
+    precos.className = "precos";
+    if (p.preco) {
+      const pr = document.createElement("span");
+      pr.className = "preco"; pr.textContent = brl(p.preco);
+      precos.append(pr);
+      if (p.precoAntigo && p.precoAntigo > p.preco) {
+        const an = document.createElement("span");
+        an.className = "antigo"; an.textContent = brl(p.precoAntigo);
+        precos.append(an);
+      }
+    }
+    const btn = document.createElement("a");
+    const url = String(p.link || "").trim();
+    btn.className = "btn"; btn.href = /^https?:\/\//i.test(url) ? url : "https://" + url; btn.target = "_blank";
+    btn.rel = "sponsored noopener noreferrer"; btn.textContent = "Ver na Shopee";
+    btn.addEventListener("click", () => contar(p.nome));
+    btn.setAttribute("aria-label", "Ver " + p.nome + " na Shopee");
+
+    corpo.append(nome, precos, btn);
+    li.append(foto, corpo);
+    return li;
+  }));
+}
+
+function contar(nome) {
+  try { if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: "clique/" + nome, title: nome, event: true }); } catch (e) {}
+}
+if (LOJA.contador) {
+  const s = document.createElement("script");
+  s.async = true; s.src = "https://gc.zgo.at/count.js";
+  s.dataset.goatcounter = "https://" + LOJA.contador + ".goatcounter.com/count";
+  document.head.append(s);
+}
+
+$("busca").oninput = e => { termo = e.target.value.trim(); lista(); };
+chips();
+lista();
+</script>
+</body>
+</html>
