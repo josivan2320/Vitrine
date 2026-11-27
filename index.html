@@ -80,6 +80,7 @@ const LOJA = {
   contador: "",    // opcional: seu código do GoatCounter (ex.: "minhaloja") para contar visitas e cliques. Vazio = desligado
   aviso: "Como afiliado(a) da Shopee, posso receber uma comissão pelas compras feitas pelos links desta página, sem custo extra para você. Preços e disponibilidade podem mudar na Shopee."
 };
+  botao: "Ver na Shopee",
 
 const PRODUTOS = [
   { nome: "Palmilha de Gel P.u Confortável Macia Ideal Para Quem Trabalha Em Pé Durante Muitas Horas", categoria: "Orthofeet", preco: 10.9, precoAntigo: 40.9, imagem: "Palmilha.jpg", link: "https://s.shopee.com.br/AAJ27Hk5l9", destaque: true },
@@ -156,9 +157,9 @@ function lista() {
     const btn = document.createElement("a");
     const url = String(p.link || "").trim();
     btn.className = "btn"; btn.href = /^https?:\/\//i.test(url) ? url : "https://" + url; btn.target = "_blank";
-    btn.rel = "sponsored noopener noreferrer"; btn.textContent = "Ver na Shopee";
+    btn.rel = "sponsored noopener noreferrer"; btn.textContent = p.botao || LOJA.botao;
     btn.addEventListener("click", () => contar(p.nome));
-    btn.setAttribute("aria-label", "Ver " + p.nome + " na Shopee");
+    btn.setAttribute("aria-label", btn.textContent + ": " + p.nome);
 
     corpo.append(nome, precos, btn);
     li.append(foto, corpo);
