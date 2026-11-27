@@ -67,12 +67,12 @@ footer a{margin-right:14px;font-weight:700}
 ================================================================== */
 const LOJA = {
   nome: "Achadinhos",
-  lema: "Produtos que valem a pena, com link direto para comprar na Shopee.",
+  lema: "Produtos que valem a pena, com link direto para comprar.",
   instagram: "",   // ex.: "https://instagram.com/seuperfil"
   whatsapp: "",    // ex.: "https://wa.me/5585999999999"
-  botao: "Ver na Shopee",   // texto padrão do botão de todos os produtos (cada produto pode ter o seu com botao: "...")
+  botao: "Ver oferta",   // texto usado quando a loja do link não é reconhecida (Shopee, Mercado Livre e Amazon são automáticas)
   contador: "",    // opcional: seu código do GoatCounter (ex.: "minhaloja") para contar visitas e cliques. Vazio = desligado
-  aviso: "Como afiliado(a) da Shopee, posso receber uma comissão pelas compras feitas pelos links desta página, sem custo extra para você. Preços e disponibilidade podem mudar na Shopee."
+  aviso: "Como afiliado(a) das lojas indicadas aqui (Shopee, Mercado Livre, Amazon), posso receber uma comissão pelas compras feitas pelos links desta página, sem custo extra para você. Preços e disponibilidade podem mudar nas lojas."
 };
 /* ===================  FIM DA PARTE EDITÁVEL  =================== */
 
@@ -99,6 +99,17 @@ function chips() {
     b.onclick = () => { cat = c; chips(); lista(); };
     return b;
   }));
+}
+
+/* Reconhece a loja pelo endereço do link e escolhe o texto do botão.
+   Se não reconhecer, usa o texto padrão (LOJA.botao) ou o da coluna "botao" do produtos.csv. */
+function textoLoja(url) {
+  let h = "";
+  try { h = new URL(url).hostname.toLowerCase(); } catch (e) { return ""; }
+  if (/shopee|shp\.ee/.test(h)) return "Ver na Shopee";
+  if (/mercadolivre|mercadolibre|meli\.la/.test(h)) return "Ver no Mercado Livre";
+  if (/amazon|amzn\./.test(h)) return "Ver na Amazon";
+  return "";
 }
 
 function lista() {
@@ -142,7 +153,7 @@ function lista() {
     const btn = document.createElement("a");
     const url = String(p.link || "").trim();
     btn.className = "btn"; btn.href = /^https?:\/\//i.test(url) ? url : "https://" + url; btn.target = "_blank";
-    btn.rel = "sponsored noopener noreferrer"; btn.textContent = p.botao || LOJA.botao;
+    btn.rel = "sponsored noopener noreferrer"; btn.textContent = p.botao || textoLoja(btn.href) || LOJA.botao;
     btn.addEventListener("click", () => contar(p.nome));
     btn.setAttribute("aria-label", btn.textContent + ": " + p.nome);
 
