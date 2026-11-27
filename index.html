@@ -63,38 +63,23 @@ footer a{margin-right:14px;font-weight:700}
 <script>
 /* =====================  EDITE SÓ ESTA PARTE  =====================
    LOJA: nome, frase, redes e aviso de afiliado.
-   PRODUTOS: um bloco { ... } por produto, separados por vírgula.
-     nome        nome do produto
-     categoria   cria o botão de filtro (ex.: "Casa", "Beleza")
-     preco       número com ponto, ex.: 49.9
-     precoAntigo (opcional) preço antes do desconto, mostra a etiqueta de %
-     imagem      endereço da foto do produto (opcional)
-     link        SEU link de afiliado da Shopee
-     destaque    true para o produto aparecer maior (opcional)
+   Os PRODUTOS ficam no arquivo produtos.csv (na mesma pasta), uma linha por produto.
 ================================================================== */
 const LOJA = {
   nome: "Achadinhos",
   lema: "Produtos que valem a pena, com link direto para comprar na Shopee.",
   instagram: "",   // ex.: "https://instagram.com/seuperfil"
   whatsapp: "",    // ex.: "https://wa.me/5585999999999"
+  botao: "Ver na Shopee",   // texto padrão do botão de todos os produtos (cada produto pode ter o seu com botao: "...")
   contador: "",    // opcional: seu código do GoatCounter (ex.: "minhaloja") para contar visitas e cliques. Vazio = desligado
   aviso: "Como afiliado(a) da Shopee, posso receber uma comissão pelas compras feitas pelos links desta página, sem custo extra para você. Preços e disponibilidade podem mudar na Shopee."
 };
-  botao: "Ver na Shopee",
-
-const PRODUTOS = [
-  { nome: "Palmilha de Gel P.u Confortável Macia Ideal Para Quem Trabalha Em Pé Durante Muitas Horas", categoria: "Orthofeet", preco: 10.9, precoAntigo: 40.9, imagem: "Palmilha.jpg", link: "https://s.shopee.com.br/AAJ27Hk5l9", destaque: true },
-  { nome: "Palmilha de Gel P.u Confortável Macia Ideal Para Quem Trabalha Em Pé Durante Muitas Horas", categoria: "Orthofeet", preco: 10.9, precoAntigo: 40.9, imagem: "Palmilha.jpg", link: "https://s.shopee.com.br/AAJ27Hk5l9", botao: "Ver na Amazon" },
-  { nome: "EXEMPLO - Garrafa térmica 500 ml", categoria: "Casa", preco: 34.5, imagem: "", link: "https://shopee.com.br/" },
-  { nome: "EXEMPLO - Luminária de mesa USB", categoria: "Eletrônicos", preco: 29.9, precoAntigo: 45, imagem: "", link: "https://shopee.com.br/" },
-  { nome: "EXEMPLO - Kit pincéis de maquiagem", categoria: "Beleza", preco: 19.9, precoAntigo: 35, imagem: "", link: "https://shopee.com.br/" },
-  { nome: "EXEMPLO - Mochila impermeável", categoria: "Moda", preco: 69.9, imagem: "", link: "https://shopee.com.br/" }
-];
 /* ===================  FIM DA PARTE EDITÁVEL  =================== */
 
 const $ = id => document.getElementById(id);
 const brl = n => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const cats = ["Todos", ...new Set(PRODUTOS.map(p => p.categoria).filter(Boolean))];
+let PRODUTOS = [];
+let cats = ["Todos"];
 let cat = "Todos", termo = "";
 
 document.title = LOJA.nome;
@@ -177,9 +162,59 @@ if (LOJA.contador) {
   document.head.append(s);
 }
 
+
+/* ---- leitura do produtos.csv ---- */
+function lerCSV(texto) {
+  texto = texto.replace(/^\uFEFF/, "");
+  const sep = (texto.split(/\r?\n/)[0] || "").includes(";") ? ";" : ",";
+  const linhas = []; let campo = "", linha = [], aspas = false;
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i];
+    if (aspas) {
+      if (c === '"' && texto[i + 1] === '"') { campo += '"'; i++; }
+      else if (c === '"') aspas = false;
+      else campo += c;
+    } else if (c === '"') aspas = true;
+    else if (c === sep) { linha.push(campo); campo = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && texto[i + 1] === "\n") i++;
+      linha.push(campo); campo = "";
+      if (linha.some(x => x.trim())) linhas.push(linha);
+      linha = [];
+    } else campo += c;
+  }
+  linha.push(campo);
+  if (linha.some(x => x.trim())) linhas.push(linha);
+  return linhas;
+}
+const numero = v => { v = String(v || "").trim().replace(/[R$\s]/g, ""); if (!v) return null; if (v.includes(",")) v = v.replace(/\./g, "").replace(",", "."); const n = parseFloat(v); return isNaN(n) ? null : n; };
+
+function erro(msg) { $("vazio").hidden = false; $("vazio").textContent = msg; }
+window.addEventListener("error", () => erro("Ocorreu um erro ao montar a página. Avise o responsável pelo site."));
+
+async function carregar() {
+  chips();
+  try {
+    const r = await fetch("produtos.csv?v=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    const linhas = lerCSV(await r.text());
+    const cab = linhas.shift().map(h => h.trim().toLowerCase());
+    const col = n => cab.indexOf(n);
+    PRODUTOS = linhas.map(l => {
+      const g = n => (col(n) >= 0 ? (l[col(n)] || "").trim() : "");
+      return { nome: g("nome"), categoria: g("categoria"), preco: numero(g("preco")), precoAntigo: numero(g("preco_antigo")),
+               imagem: g("imagem"), link: g("link"), botao: g("botao"), destaque: /^(sim|s|true|1)$/i.test(g("destaque")) };
+    }).filter(p => p.nome && p.link);
+    cats = ["Todos", ...new Set(PRODUTOS.map(p => p.categoria).filter(Boolean))];
+    chips(); lista();
+    if (!PRODUTOS.length) erro("Nenhum produto cadastrado ainda.");
+  } catch (e) {
+    erro("Não foi possível carregar a lista de produtos (produtos.csv). Confira se o arquivo está no GitHub, na mesma pasta do index.html.");
+  }
+}
+
 $("busca").oninput = e => { termo = e.target.value.trim(); lista(); };
-chips();
-lista();
+carregar();
 </script>
 </body>
 </html>
